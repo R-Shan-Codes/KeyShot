@@ -1,9 +1,10 @@
 using NAudio.Wave;
+using ShotgunKeyboard.Core.Audio;
 
 namespace ShotgunKeyboard.Core.Playlists;
 
 /// <summary>
-/// Loads every supported sound in a playlist and provides a randomized stream.
+/// Loads every supported sound in a playlist and provides randomized streams.
 /// </summary>
 public sealed class PlaylistSoundBank : IDisposable
 {
