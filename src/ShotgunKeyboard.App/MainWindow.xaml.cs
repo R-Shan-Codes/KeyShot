@@ -1,3 +1,4 @@
+using System;
 using System.Windows;
 using System.Windows.Threading;
 using ShotgunKeyboard.Core.Audio;
@@ -9,6 +10,7 @@ public partial class MainWindow : Window
 {
     private readonly GlobalKeyboardHook _keyboardHook;
     private readonly AudioEngine _audioEngine;
+    private readonly HashSet<uint> _pressedKeys = [];
 
     public MainWindow()
     {
@@ -17,6 +19,7 @@ public partial class MainWindow : Window
         _audioEngine = new AudioEngine();
         _keyboardHook = new GlobalKeyboardHook();
         _keyboardHook.KeyDown += OnGlobalKeyDown;
+        _keyboardHook.KeyUp += OnGlobalKeyUp;
         _keyboardHook.Start();
 
         Closed += (_, _) => DisposeResources();
@@ -24,12 +27,28 @@ public partial class MainWindow : Window
 
     private void OnGlobalKeyDown(object? sender, GlobalKeyEventArgs e)
     {
+        lock (_pressedKeys)
+        {
+            if (!_pressedKeys.Add(e.VirtualKeyCode))
+            {
+                return;
+            }
+        }
+
         _audioEngine.PlayShot();
 
         Dispatcher.BeginInvoke(DispatcherPriority.Background, () =>
         {
             LastKeyText.Text = $"VK {e.VirtualKeyCode}";
         });
+    }
+
+    private void OnGlobalKeyUp(object? sender, GlobalKeyEventArgs e)
+    {
+        lock (_pressedKeys)
+        {
+            _pressedKeys.Remove(e.VirtualKeyCode);
+        }
     }
 
     private void DisposeResources()
