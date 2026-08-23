@@ -1,4 +1,3 @@
-using System;
 using NAudio.Wave;
 
 namespace ShotgunKeyboard.Core.Audio;
@@ -8,23 +7,36 @@ public sealed class AudioEngine : IDisposable
     private const int MaxSimultaneousShots = 8;
 
     private readonly WaveFormat _format;
-    private readonly byte[] _soundData;
+    private readonly byte[] _fallbackSoundData;
+    private readonly SoundBank? _soundBank;
+    private readonly SoundVariationSelector _variationSelector = new();
     private readonly object _sync = new();
     private readonly List<IWavePlayer> _players = [];
     private bool _disposed;
 
-    public AudioEngine(int sampleRate = 44100)
+    public AudioEngine(string? soundDirectory = null, int sampleRate = 44100)
     {
         _format = new WaveFormat(sampleRate, 16, 1);
-        _soundData = ShotgunTestSoundGenerator.CreatePcm16Mono(sampleRate);
+        _fallbackSoundData = ShotgunTestSoundGenerator.CreatePcm16Mono(sampleRate);
+
+        if (!string.IsNullOrWhiteSpace(soundDirectory))
+        {
+            var bank = new SoundBank(soundDirectory, sampleRate);
+            _soundBank = bank.Count > 0 ? bank : null;
+            if (_soundBank is null)
+            {
+                bank.Dispose();
+            }
+        }
     }
+
+    public int SoundVariationCount => _soundBank?.Count ?? 1;
 
     public void PlayShot()
     {
         lock (_sync)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
-
             CleanupFinishedPlayers();
 
             if (_players.Count >= MaxSimultaneousShots)
@@ -32,16 +44,14 @@ public sealed class AudioEngine : IDisposable
                 return;
             }
 
-            var waveStream = new RawSourceWaveStream(
-                new MemoryStream(_soundData, writable: false),
-                _format);
+            var stream = CreateNextStream();
             var player = new WaveOutEvent { Volume = 0.85f };
 
-            player.Init(waveStream);
+            player.Init(stream);
             player.PlaybackStopped += (_, _) =>
             {
+                stream.Dispose();
                 player.Dispose();
-                waveStream.Dispose();
 
                 lock (_sync)
                 {
@@ -52,6 +62,19 @@ public sealed class AudioEngine : IDisposable
             _players.Add(player);
             player.Play();
         }
+    }
+
+    private WaveStream CreateNextStream()
+    {
+        if (_soundBank is not null)
+        {
+            var index = _variationSelector.Select(_soundBank.Count);
+            return _soundBank.CreateStream(index);
+        }
+
+        return new RawSourceWaveStream(
+            new MemoryStream(_fallbackSoundData, writable: false),
+            _format);
     }
 
     private void CleanupFinishedPlayers()
@@ -88,6 +111,7 @@ public sealed class AudioEngine : IDisposable
             player.Dispose();
         }
 
+        _soundBank?.Dispose();
         GC.SuppressFinalize(this);
     }
 }
