@@ -8,6 +8,8 @@ namespace ShotgunKeyboard.App;
 
 public partial class MainWindow : Window
 {
+    private const uint EnterVirtualKey = 0x0D;
+
     private readonly GlobalKeyboardHook _keyboardHook;
     private readonly AudioEngine _audioEngine;
 
@@ -26,7 +28,7 @@ public partial class MainWindow : Window
 
     private void OnGlobalKeyDown(object? sender, GlobalKeyEventArgs e)
     {
-        _audioEngine.PlayShot();
+        _audioEngine.PlayShot(e.VirtualKeyCode == EnterVirtualKey);
 
         Dispatcher.BeginInvoke(DispatcherPriority.Background, () =>
         {
