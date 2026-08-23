@@ -1,3 +1,5 @@
+using System;
+
 namespace ShotgunKeyboard.Core.Input;
 
 public sealed class GlobalKeyEventArgs : EventArgs

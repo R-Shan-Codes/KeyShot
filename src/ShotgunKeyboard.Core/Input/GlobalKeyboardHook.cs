@@ -18,29 +18,49 @@ public sealed class GlobalKeyboardHook : IDisposable
     public event EventHandler<GlobalKeyEventArgs>? KeyDown;
     public event EventHandler<GlobalKeyEventArgs>? KeyUp;
 
-    public GlobalKeyboardHook() => _callback = HookCallback;
+    public GlobalKeyboardHook()
+    {
+        _callback = HookCallback;
+    }
 
     public void Start()
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
-        if (_hookHandle != 0) return;
+
+        if (_hookHandle != 0)
+        {
+            return;
+        }
 
         _hookHandle = SetWindowsHookEx(WhKeyboardLl, _callback, GetModuleHandle(null), 0);
         if (_hookHandle == 0)
+        {
             throw new InvalidOperationException($"Unable to install the global keyboard hook. Win32 error: {Marshal.GetLastWin32Error()}.");
+        }
     }
 
     public void Stop()
     {
-        if (_hookHandle == 0) return;
+        if (_hookHandle == 0)
+        {
+            return;
+        }
+
         if (!UnhookWindowsHookEx(_hookHandle))
+        {
             throw new InvalidOperationException($"Unable to remove the global keyboard hook. Win32 error: {Marshal.GetLastWin32Error()}.");
+        }
+
         _hookHandle = 0;
     }
 
     public void Dispose()
     {
-        if (_disposed) return;
+        if (_disposed)
+        {
+            return;
+        }
+
         Stop();
         _disposed = true;
         GC.SuppressFinalize(this);
@@ -53,8 +73,14 @@ public sealed class GlobalKeyboardHook : IDisposable
             var hookStruct = Marshal.PtrToStructure<Kbdllhookstruct>(lParam);
             var args = new GlobalKeyEventArgs(hookStruct.VkCode);
 
-            if (wParam == WmKeyDown || wParam == WmSysKeyDown) KeyDown?.Invoke(this, args);
-            else if (wParam == WmKeyUp || wParam == WmSysKeyUp) KeyUp?.Invoke(this, args);
+            if (wParam == WmKeyDown || wParam == WmSysKeyDown)
+            {
+                KeyDown?.Invoke(this, args);
+            }
+            else if (wParam == WmKeyUp || wParam == WmSysKeyUp)
+            {
+                KeyUp?.Invoke(this, args);
+            }
         }
 
         return CallNextHookEx(_hookHandle, nCode, wParam, lParam);
