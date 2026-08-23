@@ -1,19 +1,84 @@
 <Window x:Class="ShotgunKeyboard.App.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="KeyShot - Phase 1"
-        Width="420"
-        Height="240"
-        WindowStartupLocation="CenterScreen">
-    <Grid Margin="24">
-        <StackPanel VerticalAlignment="Center">
-            <TextBlock FontSize="24" FontWeight="SemiBold">Global Keyboard Input</TextBlock>
-            <TextBlock Margin="0,12,0,0">Press any key anywhere in Windows.</TextBlock>
-            <TextBlock x:Name="LastKeyText"
-                       Margin="0,24,0,0"
-                       FontSize="28"
-                       FontWeight="Bold"
-                       Text="Waiting..." />
-        </StackPanel>
+        Title="KeyShot"
+        Width="480"
+        Height="360"
+        MinWidth="440"
+        MinHeight="330"
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="CanMinimize">
+    <Grid Margin="28">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <StackPanel>
+                <TextBlock FontSize="28" FontWeight="Bold">KeyShot</TextBlock>
+                <TextBlock Margin="0,4,0,0" Foreground="Gray">Keyboard sound effects</TextBlock>
+            </StackPanel>
+            <Border Grid.Column="1" Padding="10,6" CornerRadius="14" Background="#E8F5E9">
+                <TextBlock x:Name="StatusText" Foreground="#2E7D32" FontWeight="SemiBold" Text="● ACTIVE" />
+            </Border>
+        </Grid>
+
+        <Border Grid.Row="1" Margin="0,24,0,0" Padding="16" BorderBrush="#DDDDDD" BorderThickness="1" CornerRadius="8">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel>
+                    <TextBlock FontSize="13" Foreground="Gray">WEAPON</TextBlock>
+                    <TextBlock Margin="0,4,0,0" FontSize="20" FontWeight="SemiBold">Shotgun</TextBlock>
+                </StackPanel>
+                <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="20">▼</TextBlock>
+            </Grid>
+        </Border>
+
+        <Grid Grid.Row="2" Margin="0,20,0,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <Grid>
+                <TextBlock FontSize="15" FontWeight="SemiBold">Volume</TextBlock>
+                <TextBlock x:Name="VolumeText" HorizontalAlignment="Right" Foreground="Gray" Text="78%" />
+            </Grid>
+            <Slider Grid.Row="1" x:Name="VolumeSlider" Margin="0,8,0,0" Minimum="0" Maximum="100" Value="78" TickFrequency="10" IsSnapToTickEnabled="False" ValueChanged="VolumeSlider_OnValueChanged" />
+        </Grid>
+
+        <Button Grid.Row="3" x:Name="EnableButton" Margin="0,22,0,0" Height="42" FontSize="15" FontWeight="SemiBold" Click="EnableButton_OnClick">Disable KeyShot</Button>
+
+        <Border Grid.Row="4" Margin="0,20,0,0" Padding="16" Background="#F6F6F6" CornerRadius="8">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <Grid>
+                    <TextBlock Foreground="Gray">Last key</TextBlock>
+                    <TextBlock x:Name="LastKeyText" HorizontalAlignment="Right" FontWeight="SemiBold" Text="Waiting..." />
+                </Grid>
+                <Grid Grid.Row="1" Margin="0,10,0,0">
+                    <TextBlock Foreground="Gray">Sound bank</TextBlock>
+                    <TextBlock x:Name="SoundBankText" HorizontalAlignment="Right" FontWeight="SemiBold" Text="4 variations" />
+                </Grid>
+                <Grid Grid.Row="2" Margin="0,10,0,0">
+                    <TextBlock Foreground="Gray">Enter key</TextBlock>
+                    <TextBlock HorizontalAlignment="Right" FontWeight="SemiBold" Text="Heavy shot" />
+                </Grid>
+            </Grid>
+        </Border>
     </Grid>
 </Window>
