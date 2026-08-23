@@ -4,51 +4,36 @@ namespace ShotgunKeyboard.Core.Audio;
 
 public sealed class SoundBank : IDisposable
 {
-    private readonly List<byte[]> _sounds = [];
-    private readonly WaveFormat _format;
+    private readonly string[] _paths;
 
-    public SoundBank(string directory, int sampleRate = 44100)
+    public SoundBank(string directory, IEnumerable<string> fileNames)
     {
-        _format = new WaveFormat(sampleRate, 16, 1);
-
         if (!Directory.Exists(directory))
         {
+            _paths = [];
             return;
         }
 
-        foreach (var path in Directory.EnumerateFiles(directory, "*.wav", SearchOption.TopDirectoryOnly).OrderBy(x => x))
-        {
-            using var reader = new WaveFileReader(path);
-            if (reader.WaveFormat.Encoding != WaveFormatEncoding.Pcm ||
-                reader.WaveFormat.BitsPerSample != 16 ||
-                reader.WaveFormat.Channels != 1 ||
-                reader.WaveFormat.SampleRate != sampleRate)
-            {
-                throw new InvalidDataException($"Sound '{Path.GetFileName(path)}' must be PCM 16-bit mono WAV at {sampleRate} Hz.");
-            }
-
-            using var stream = new MemoryStream();
-            reader.CopyTo(stream);
-            _sounds.Add(stream.ToArray());
-        }
+        _paths = fileNames
+            .Select(fileName => Path.Combine(directory, fileName))
+            .Where(File.Exists)
+            .ToArray();
     }
 
-    public int Count => _sounds.Count;
+    public int Count => _paths.Length;
 
     public WaveStream CreateStream(int index)
     {
-        if ((uint)index >= (uint)_sounds.Count)
+        if ((uint)index >= (uint)_paths.Length)
         {
             throw new ArgumentOutOfRangeException(nameof(index));
         }
 
-        return new RawSourceWaveStream(
-            new MemoryStream(_sounds[index], writable: false),
-            _format);
+        return new AudioFileReader(_paths[index]);
     }
 
     public void Dispose()
     {
-        _sounds.Clear();
+        // AudioFileReader instances are owned and disposed by AudioEngine after playback.
     }
 }
