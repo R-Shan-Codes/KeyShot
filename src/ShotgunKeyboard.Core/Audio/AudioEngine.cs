@@ -23,6 +23,8 @@ public sealed class AudioEngine : IDisposable
     private readonly List<IWavePlayer> _players = [];
     private readonly string? _soundDirectory;
     private bool _disposed;
+    private bool _enabled = true;
+    private float _masterVolume = 0.78f;
 
     public AudioEngine(string? soundDirectory = null, int sampleRate = 44100)
     {
@@ -60,11 +62,49 @@ public sealed class AudioEngine : IDisposable
 
     public int NormalSoundVariationCount => _normalSoundBank?.Count ?? 1;
 
+    public bool Enabled
+    {
+        get => _enabled;
+        set
+        {
+            lock (_sync)
+            {
+                _enabled = value;
+                if (!_enabled)
+                {
+                    StopAllPlayers();
+                }
+            }
+        }
+    }
+
+    public float MasterVolume
+    {
+        get => _masterVolume;
+        set
+        {
+            var clamped = Math.Clamp(value, 0f, 1f);
+            lock (_sync)
+            {
+                _masterVolume = clamped;
+                foreach (var player in _players.OfType<WaveOutEvent>())
+                {
+                    player.Volume = clamped;
+                }
+            }
+        }
+    }
+
     public void PlayShot(bool heavy = false)
     {
         lock (_sync)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
+            if (!_enabled)
+            {
+                return;
+            }
+
             CleanupFinishedPlayers();
 
             if (_players.Count >= MaxSimultaneousShots)
@@ -73,7 +113,7 @@ public sealed class AudioEngine : IDisposable
             }
 
             var stream = CreateNextStream(heavy);
-            var player = new WaveOutEvent { Volume = heavy ? 0.9f : 0.78f };
+            var player = new WaveOutEvent { Volume = Math.Clamp(_masterVolume * (heavy ? 1.15f : 1f), 0f, 1f) };
 
             player.Init(stream);
             player.PlaybackStopped += (_, _) =>
@@ -129,6 +169,15 @@ public sealed class AudioEngine : IDisposable
                 _players[i].Dispose();
                 _players.RemoveAt(i);
             }
+        }
+    }
+
+    private void StopAllPlayers()
+    {
+        var players = _players.ToArray();
+        foreach (var player in players)
+        {
+            player.Stop();
         }
     }
 
