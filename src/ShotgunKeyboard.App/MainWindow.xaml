@@ -40,9 +40,14 @@
                     </Grid.ColumnDefinitions>
                     <StackPanel>
                         <TextBlock FontSize="13" Foreground="Gray">WEAPON</TextBlock>
-                        <TextBlock Margin="0,4,0,0" FontSize="20" FontWeight="SemiBold">Shotgun</TextBlock>
+                        <ComboBox x:Name="WeaponComboBox"
+                                  Margin="0,6,0,0"
+                                  Width="280"
+                                  HorizontalAlignment="Left"
+                                  FontSize="18"
+                                  DisplayMemberPath="DisplayName"
+                                  SelectionChanged="WeaponComboBox_OnSelectionChanged" />
                     </StackPanel>
-                    <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="20">▼</TextBlock>
                 </Grid>
             </Border>
 
