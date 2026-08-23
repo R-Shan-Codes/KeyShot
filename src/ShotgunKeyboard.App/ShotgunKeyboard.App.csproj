@@ -12,4 +12,10 @@
   <ItemGroup>
     <ProjectReference Include="..\ShotgunKeyboard.Core\ShotgunKeyboard.Core.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="assets\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
 </Project>
