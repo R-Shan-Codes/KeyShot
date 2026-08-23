@@ -1,0 +1,30 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ShotgunKeyboard.App", "src\ShotgunKeyboard.App\ShotgunKeyboard.App.csproj", "{B4B0E1A7-4D63-4C5A-9F08-1D3F4D0B7A01}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ShotgunKeyboard.Core", "src\ShotgunKeyboard.Core\ShotgunKeyboard.Core.csproj", "{A9E2B8C1-7F42-4B11-9C2D-6E8A0F3B5D24}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ShotgunKeyboard.Tests", "src\ShotgunKeyboard.Tests\ShotgunKeyboard.Tests.csproj", "{C7F31A92-5E64-4B20-8D13-2A6F9E0C4B58}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B4B0E1A7-4D63-4C5A-9F08-1D3F4D0B7A01}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B4B0E1A7-4D63-4C5A-9F08-1D3F4D0B7A01}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B4B0E1A7-4D63-4C5A-9F08-1D3F4D0B7A01}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B4B0E1A7-4D63-4C5A-9F08-1D3F4D0B7A01}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A9E2B8C1-7F42-4B11-9C2D-6E8A0F3B5D24}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A9E2B8C1-7F42-4B11-9C2D-6E8A0F3B5D24}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A9E2B8C1-7F42-4B11-9C2D-6E8A0F3B5D24}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A9E2B8C1-7F42-4B11-9C2D-6E8A0F3B5D24}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C7F31A92-5E64-4B20-8D13-2A6F9E0C4B58}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C7F31A92-5E64-4B20-8D13-2A6F9E0C4B58}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C7F31A92-5E64-4B20-8D13-2A6F9E0C4B58}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C7F31A92-5E64-4B20-8D13-2A6F9E0C4B58}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
