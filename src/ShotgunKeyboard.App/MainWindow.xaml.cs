@@ -1,3 +1,4 @@
+using System.IO;
 using System.Windows;
 using System.Windows.Threading;
 using ShotgunKeyboard.Core.Audio;
@@ -14,7 +15,8 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
 
-        _audioEngine = new AudioEngine();
+        var soundDirectory = Path.Combine(AppContext.BaseDirectory, "assets", "sounds", "shotgun");
+        _audioEngine = new AudioEngine(soundDirectory);
         _keyboardHook = new GlobalKeyboardHook();
         _keyboardHook.KeyDown += OnGlobalKeyDown;
         _keyboardHook.Start();
