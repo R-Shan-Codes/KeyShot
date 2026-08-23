@@ -5,34 +5,44 @@ namespace ShotgunKeyboard.Core.Audio;
 public sealed class AudioEngine : IDisposable
 {
     private const int MaxSimultaneousShots = 8;
+    private const string HeavySound = "shot_1.mp3";
+    private static readonly string[] NormalSounds = ["shot_2.mp3", "shot_3.mp3", "shot_4.mp3", "shot_5.mp3"];
 
-    private readonly WaveFormat _format;
+    private readonly WaveFormat _fallbackFormat;
     private readonly byte[] _fallbackSoundData;
-    private readonly SoundBank? _soundBank;
-    private readonly SoundVariationSelector _variationSelector = new();
+    private readonly SoundBank? _normalSoundBank;
+    private readonly SoundBank? _heavySoundBank;
+    private readonly SoundVariationSelector _normalVariationSelector = new();
     private readonly object _sync = new();
     private readonly List<IWavePlayer> _players = [];
     private bool _disposed;
 
     public AudioEngine(string? soundDirectory = null, int sampleRate = 44100)
     {
-        _format = new WaveFormat(sampleRate, 16, 1);
+        _fallbackFormat = new WaveFormat(sampleRate, 16, 1);
         _fallbackSoundData = ShotgunTestSoundGenerator.CreatePcm16Mono(sampleRate);
 
         if (!string.IsNullOrWhiteSpace(soundDirectory))
         {
-            var bank = new SoundBank(soundDirectory, sampleRate);
-            _soundBank = bank.Count > 0 ? bank : null;
-            if (_soundBank is null)
+            var normalBank = new SoundBank(soundDirectory, NormalSounds);
+            _normalSoundBank = normalBank.Count > 0 ? normalBank : null;
+            if (_normalSoundBank is null)
             {
-                bank.Dispose();
+                normalBank.Dispose();
+            }
+
+            var heavyBank = new SoundBank(soundDirectory, [HeavySound]);
+            _heavySoundBank = heavyBank.Count > 0 ? heavyBank : null;
+            if (_heavySoundBank is null)
+            {
+                heavyBank.Dispose();
             }
         }
     }
 
-    public int SoundVariationCount => _soundBank?.Count ?? 1;
+    public int NormalSoundVariationCount => _normalSoundBank?.Count ?? 1;
 
-    public void PlayShot()
+    public void PlayShot(bool heavy = false)
     {
         lock (_sync)
         {
@@ -44,8 +54,8 @@ public sealed class AudioEngine : IDisposable
                 return;
             }
 
-            var stream = CreateNextStream();
-            var player = new WaveOutEvent { Volume = 0.85f };
+            var stream = CreateNextStream(heavy);
+            var player = new WaveOutEvent { Volume = heavy ? 0.9f : 0.78f };
 
             player.Init(stream);
             player.PlaybackStopped += (_, _) =>
@@ -64,17 +74,22 @@ public sealed class AudioEngine : IDisposable
         }
     }
 
-    private WaveStream CreateNextStream()
+    private WaveStream CreateNextStream(bool heavy)
     {
-        if (_soundBank is not null)
+        if (heavy && _heavySoundBank is not null)
         {
-            var index = _variationSelector.Select(_soundBank.Count);
-            return _soundBank.CreateStream(index);
+            return _heavySoundBank.CreateStream(0);
+        }
+
+        if (!heavy && _normalSoundBank is not null)
+        {
+            var index = _normalVariationSelector.Select(_normalSoundBank.Count);
+            return _normalSoundBank.CreateStream(index);
         }
 
         return new RawSourceWaveStream(
             new MemoryStream(_fallbackSoundData, writable: false),
-            _format);
+            _fallbackFormat);
     }
 
     private void CleanupFinishedPlayers()
@@ -111,7 +126,8 @@ public sealed class AudioEngine : IDisposable
             player.Dispose();
         }
 
-        _soundBank?.Dispose();
+        _normalSoundBank?.Dispose();
+        _heavySoundBank?.Dispose();
         GC.SuppressFinalize(this);
     }
 }
