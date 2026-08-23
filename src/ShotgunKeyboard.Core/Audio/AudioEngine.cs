@@ -21,14 +21,16 @@ public sealed class AudioEngine : IDisposable
     private readonly SoundVariationSelector _normalVariationSelector = new();
     private readonly object _sync = new();
     private readonly List<IWavePlayer> _players = [];
+    private readonly string? _soundDirectory;
     private bool _disposed;
 
     public AudioEngine(string? soundDirectory = null, int sampleRate = 44100)
     {
         _fallbackFormat = new WaveFormat(sampleRate, 16, 1);
         _fallbackSoundData = ShotgunTestSoundGenerator.CreatePcm16Mono(sampleRate);
+        _soundDirectory = soundDirectory;
 
-        if (!string.IsNullOrWhiteSpace(soundDirectory))
+        if (!string.IsNullOrWhiteSpace(_soundDirectory))
         {
             var normalFiles = NormalSounds
                 .Select(ResolvePreferredFileName)
@@ -36,7 +38,7 @@ public sealed class AudioEngine : IDisposable
                 .Select(fileName => fileName!)
                 .ToArray();
 
-            var normalBank = new SoundBank(soundDirectory, normalFiles);
+            var normalBank = new SoundBank(_soundDirectory, normalFiles);
             _normalSoundBank = normalBank.Count > 0 ? normalBank : null;
             if (_normalSoundBank is null)
             {
@@ -46,7 +48,7 @@ public sealed class AudioEngine : IDisposable
             var heavyFile = ResolvePreferredFileName(HeavySounds);
             if (heavyFile is not null)
             {
-                var heavyBank = new SoundBank(soundDirectory, [heavyFile]);
+                var heavyBank = new SoundBank(_soundDirectory, [heavyFile]);
                 _heavySoundBank = heavyBank.Count > 0 ? heavyBank : null;
                 if (_heavySoundBank is null)
                 {
@@ -110,7 +112,6 @@ public sealed class AudioEngine : IDisposable
 
     private string? ResolvePreferredFileName(IEnumerable<string> candidates)
     {
-        // The first existing file wins, so a WAV can replace an MP3 without changing code.
         if (string.IsNullOrWhiteSpace(_soundDirectory))
         {
             return null;
@@ -118,8 +119,6 @@ public sealed class AudioEngine : IDisposable
 
         return candidates.FirstOrDefault(fileName => File.Exists(Path.Combine(_soundDirectory, fileName)));
     }
-
-    private readonly string? _soundDirectory;
 
     private void CleanupFinishedPlayers()
     {
