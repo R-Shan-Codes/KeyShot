@@ -1,4 +1,5 @@
 using ShotgunKeyboard.Core.Audio;
+using Xunit;
 
 namespace ShotgunKeyboard.Tests;
 
