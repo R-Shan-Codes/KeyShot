@@ -5,6 +5,8 @@ namespace ShotgunKeyboard.Core.Audio;
 
 public sealed class AudioEngine : IDisposable
 {
+    private const int MaxSimultaneousShots = 8;
+
     private readonly WaveFormat _format;
     private readonly byte[] _soundData;
     private readonly object _sync = new();
@@ -25,13 +27,22 @@ public sealed class AudioEngine : IDisposable
 
             CleanupFinishedPlayers();
 
-            var waveStream = new RawSourceWaveStream(new MemoryStream(_soundData, writable: false), _format);
+            if (_players.Count >= MaxSimultaneousShots)
+            {
+                return;
+            }
+
+            var waveStream = new RawSourceWaveStream(
+                new MemoryStream(_soundData, writable: false),
+                _format);
             var player = new WaveOutEvent { Volume = 0.85f };
+
             player.Init(waveStream);
             player.PlaybackStopped += (_, _) =>
             {
                 player.Dispose();
                 waveStream.Dispose();
+
                 lock (_sync)
                 {
                     _players.Remove(player);
@@ -57,6 +68,8 @@ public sealed class AudioEngine : IDisposable
 
     public void Dispose()
     {
+        IWavePlayer[] players;
+
         lock (_sync)
         {
             if (_disposed)
@@ -65,13 +78,14 @@ public sealed class AudioEngine : IDisposable
             }
 
             _disposed = true;
-            foreach (var player in _players)
-            {
-                player.Stop();
-                player.Dispose();
-            }
-
+            players = [.. _players];
             _players.Clear();
+        }
+
+        foreach (var player in players)
+        {
+            player.Stop();
+            player.Dispose();
         }
 
         GC.SuppressFinalize(this);
