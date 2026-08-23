@@ -5,4 +5,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>ShotgunKeyboard.Core</RootNamespace>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="NAudio" Version="2.2.1" />
+  </ItemGroup>
 </Project>
