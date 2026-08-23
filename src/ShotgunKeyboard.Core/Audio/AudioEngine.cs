@@ -5,8 +5,14 @@ namespace ShotgunKeyboard.Core.Audio;
 public sealed class AudioEngine : IDisposable
 {
     private const int MaxSimultaneousShots = 8;
-    private const string HeavySound = "shot_1.mp3";
-    private static readonly string[] NormalSounds = ["shot_2.mp3", "shot_3.mp3", "shot_4.mp3", "shot_5.mp3"];
+    private static readonly string[] HeavySounds = ["shot_1.mp3", "shot_1.wav"];
+    private static readonly string[][] NormalSounds =
+    [
+        ["shot_2.wav", "shot_2.mp3"],
+        ["shot_3.wav", "shot_3.mp3"],
+        ["shot_4.wav", "shot_4.mp3"],
+        ["shot_5.wav", "shot_5.mp3"]
+    ];
 
     private readonly WaveFormat _fallbackFormat;
     private readonly byte[] _fallbackSoundData;
@@ -24,18 +30,28 @@ public sealed class AudioEngine : IDisposable
 
         if (!string.IsNullOrWhiteSpace(soundDirectory))
         {
-            var normalBank = new SoundBank(soundDirectory, NormalSounds);
+            var normalFiles = NormalSounds
+                .Select(ResolvePreferredFileName)
+                .Where(fileName => fileName is not null)
+                .Select(fileName => fileName!)
+                .ToArray();
+
+            var normalBank = new SoundBank(soundDirectory, normalFiles);
             _normalSoundBank = normalBank.Count > 0 ? normalBank : null;
             if (_normalSoundBank is null)
             {
                 normalBank.Dispose();
             }
 
-            var heavyBank = new SoundBank(soundDirectory, [HeavySound]);
-            _heavySoundBank = heavyBank.Count > 0 ? heavyBank : null;
-            if (_heavySoundBank is null)
+            var heavyFile = ResolvePreferredFileName(HeavySounds);
+            if (heavyFile is not null)
             {
-                heavyBank.Dispose();
+                var heavyBank = new SoundBank(soundDirectory, [heavyFile]);
+                _heavySoundBank = heavyBank.Count > 0 ? heavyBank : null;
+                if (_heavySoundBank is null)
+                {
+                    heavyBank.Dispose();
+                }
             }
         }
     }
@@ -91,6 +107,19 @@ public sealed class AudioEngine : IDisposable
             new MemoryStream(_fallbackSoundData, writable: false),
             _fallbackFormat);
     }
+
+    private string? ResolvePreferredFileName(IEnumerable<string> candidates)
+    {
+        // The first existing file wins, so a WAV can replace an MP3 without changing code.
+        if (string.IsNullOrWhiteSpace(_soundDirectory))
+        {
+            return null;
+        }
+
+        return candidates.FirstOrDefault(fileName => File.Exists(Path.Combine(_soundDirectory, fileName)));
+    }
+
+    private readonly string? _soundDirectory;
 
     private void CleanupFinishedPlayers()
     {
