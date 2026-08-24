@@ -7,7 +7,7 @@ public sealed class KeyShotSettings
 {
     public bool Enabled { get; set; } = true;
     public double Volume { get; set; } = 78;
-    public string Weapon { get; set; } = "Shotgun";
+    public string Weapon { get; set; } = "shotgun";
 
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
