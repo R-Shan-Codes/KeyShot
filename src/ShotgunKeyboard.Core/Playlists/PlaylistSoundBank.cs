@@ -6,12 +6,17 @@ namespace ShotgunKeyboard.Core.Playlists;
 public sealed class PlaylistSoundBank : IDisposable
 {
     private readonly SoundBank _bank;
+    private readonly string[] _files;
     private readonly SoundVariationSelector _selector = new();
 
     public PlaylistSoundBank(PlaylistDefinition playlist)
     {
-        var files = playlist.Sounds.Select(sound => sound.FileName).ToArray();
-        _bank = new SoundBank(playlist.Directory, files);
+        _files = playlist.Sounds
+            .Select(sound => sound.FileName)
+            .Where(file => File.Exists(Path.Combine(playlist.Directory, file)))
+            .ToArray();
+
+        _bank = new SoundBank(playlist.Directory, _files);
     }
 
     public int Count => _bank.Count;
@@ -29,14 +34,10 @@ public sealed class PlaylistSoundBank : IDisposable
         if (_bank.Count == 0)
             throw new InvalidOperationException("The playlist contains no supported audio files.");
 
-        var index = _bank.Files
-            .Select((file, i) => (file, i))
-            .FirstOrDefault(x => string.Equals(Path.GetFileName(x.file), fileName, StringComparison.OrdinalIgnoreCase)).i;
+        var index = Array.FindIndex(_files, file =>
+            string.Equals(file, fileName, StringComparison.OrdinalIgnoreCase));
 
-        if (index < 0)
-            return CreateNextStream();
-
-        return _bank.CreateStream(index);
+        return index >= 0 ? _bank.CreateStream(index) : CreateNextStream();
     }
 
     public WaveStream CreateStreamForKey(uint virtualKeyCode)
