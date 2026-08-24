@@ -65,8 +65,8 @@ public partial class MainWindow : Window
     private void OnGlobalKeyDown(object? sender, GlobalKeyEventArgs e)
     {
         var layer = KeyboardLayerResolver.Resolve(e.VirtualKeyCode);
-        var selectedSound = _audioEngine.Mode == PlaybackMode.KeyMapped ? _settings.GetLayerSound(layer) : null;
-        _audioEngine.PlayShot(layer == KeyboardLayer.Enter, e.VirtualKeyCode);
+        var selectedSound = _audioEngine.Mode == PlaybackMode.Selected ? _settings.GetLayerSound(layer) : null;
+        _audioEngine.PlayShot(layer == KeyboardLayer.Enter, selectedSound);
         Dispatcher.BeginInvoke(DispatcherPriority.Background, () =>
         {
             LastKeyText.Text = $"{layer} · VK {e.VirtualKeyCode}";
@@ -126,7 +126,8 @@ public partial class MainWindow : Window
             var sounds = playlist?.Sounds ?? [];
             foreach (var (layer, name) in LayerMappings)
             {
-                if (FindName(name) is not ComboBox combo) continue;
+                var combo = FindName(name) as ComboBox;
+                if (combo is null) continue;
                 combo.ItemsSource = sounds;
                 var configured = _settings.GetLayerSound(layer);
                 combo.SelectedItem = sounds.FirstOrDefault(s => string.Equals(s.FileName, configured, StringComparison.OrdinalIgnoreCase))
@@ -141,7 +142,7 @@ public partial class MainWindow : Window
 
     private void UpdateLayerControls()
     {
-        var enabled = _audioEngine.Mode == PlaybackMode.KeyMapped;
+        var enabled = _audioEngine.Mode == PlaybackMode.Selected;
         foreach (var (_, name) in LayerMappings)
         {
             if (FindName(name) is ComboBox combo) combo.IsEnabled = enabled;
