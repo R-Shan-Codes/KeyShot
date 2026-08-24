@@ -1,6 +1,7 @@
 using System.IO;
 using System.Text.Json;
 using ShotgunKeyboard.Core.Audio;
+using ShotgunKeyboard.Core.Input;
 
 namespace ShotgunKeyboard.App.Settings;
 
@@ -10,6 +11,13 @@ public sealed class KeyShotSettings
     public double Volume { get; set; } = 78;
     public string Weapon { get; set; } = "shotgun";
     public PlaybackMode PlaybackMode { get; set; } = PlaybackMode.Random;
+    public Dictionary<string, string> LayerSounds { get; set; } = new();
+
+    public string? GetLayerSound(KeyboardLayer layer)
+        => LayerSounds.TryGetValue(layer.ToString(), out var sound) ? sound : null;
+
+    public void SetLayerSound(KeyboardLayer layer, string soundFile)
+        => LayerSounds[layer.ToString()] = soundFile;
 
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
