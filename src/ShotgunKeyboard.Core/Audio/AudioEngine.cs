@@ -1,4 +1,5 @@
 using NAudio.Wave;
+using ShotgunKeyboard.Core.Input;
 using ShotgunKeyboard.Core.Playlists;
 using ShotgunKeyboard.Core.Weapons;
 
@@ -7,7 +8,7 @@ namespace ShotgunKeyboard.Core.Audio;
 public enum PlaybackMode
 {
     Random,
-    KeyMapped
+    Selected
 }
 
 public sealed class AudioEngine : IDisposable
@@ -21,6 +22,7 @@ public sealed class AudioEngine : IDisposable
     private readonly object _sync = new();
     private readonly List<IWavePlayer> _players = [];
     private readonly string? _soundDirectory;
+    private readonly Dictionary<KeyboardLayer, string> _layerSounds = new();
     private long _lastNormalShotTicks;
     private bool _disposed;
     private bool _enabled = true;
@@ -71,9 +73,18 @@ public sealed class AudioEngine : IDisposable
             previous?.Dispose();
 
             if (_playlistSoundBank is null)
-            {
                 next.Dispose();
-            }
+        }
+    }
+
+    public void SetLayerSound(KeyboardLayer layer, string? soundFile)
+    {
+        lock (_sync)
+        {
+            if (string.IsNullOrWhiteSpace(soundFile))
+                _layerSounds.Remove(layer);
+            else
+                _layerSounds[layer] = soundFile;
         }
     }
 
@@ -86,9 +97,7 @@ public sealed class AudioEngine : IDisposable
             {
                 _enabled = value;
                 if (!_enabled)
-                {
                     StopAllPlayers();
-                }
             }
         }
     }
@@ -103,9 +112,7 @@ public sealed class AudioEngine : IDisposable
             {
                 _masterVolume = clamped;
                 foreach (var player in _players.OfType<WaveOutEvent>())
-                {
                     player.Volume = clamped;
-                }
             }
         }
     }
@@ -116,26 +123,18 @@ public sealed class AudioEngine : IDisposable
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
             if (!_enabled)
-            {
                 return;
-            }
 
             var now = DateTime.UtcNow.Ticks;
             if (!heavy && now - _lastNormalShotTicks < MinimumNormalShotIntervalTicks)
-            {
                 return;
-            }
 
             if (!heavy)
-            {
                 _lastNormalShotTicks = now;
-            }
 
             CleanupFinishedPlayers();
             if (_players.Count >= MaxSimultaneousShots)
-            {
                 return;
-            }
 
             var stream = CreateNextStream(heavy, virtualKeyCode);
             var player = new WaveOutEvent
@@ -148,11 +147,8 @@ public sealed class AudioEngine : IDisposable
             {
                 stream.Dispose();
                 player.Dispose();
-
                 lock (_sync)
-                {
                     _players.Remove(player);
-                }
             };
 
             _players.Add(player);
@@ -163,15 +159,18 @@ public sealed class AudioEngine : IDisposable
     private WaveStream CreateNextStream(bool heavy, uint virtualKeyCode)
     {
         if (heavy && _heavySoundBank is not null)
-        {
             return _heavySoundBank.CreateStream(0);
-        }
 
         if (!heavy && _playlistSoundBank is not null)
         {
-            return Mode == PlaybackMode.KeyMapped
-                ? _playlistSoundBank.CreateStreamForKey(virtualKeyCode)
-                : _playlistSoundBank.CreateNextStream();
+            if (Mode == PlaybackMode.Selected)
+            {
+                var layer = KeyboardLayerResolver.Resolve(virtualKeyCode);
+                if (_layerSounds.TryGetValue(layer, out var soundFile))
+                    return _playlistSoundBank.CreateStreamForSound(soundFile);
+            }
+
+            return _playlistSoundBank.CreateNextStream();
         }
 
         return new RawSourceWaveStream(
@@ -182,9 +181,7 @@ public sealed class AudioEngine : IDisposable
     private string? ResolvePreferredFileName(IEnumerable<string> candidates)
     {
         if (string.IsNullOrWhiteSpace(_soundDirectory))
-        {
             return null;
-        }
 
         return candidates.FirstOrDefault(fileName => File.Exists(Path.Combine(_soundDirectory, fileName)));
     }
@@ -203,11 +200,8 @@ public sealed class AudioEngine : IDisposable
 
     private void StopAllPlayers()
     {
-        var players = _players.ToArray();
-        foreach (var player in players)
-        {
+        foreach (var player in _players.ToArray())
             player.Stop();
-        }
     }
 
     public void Dispose()
@@ -217,9 +211,7 @@ public sealed class AudioEngine : IDisposable
         lock (_sync)
         {
             if (_disposed)
-            {
                 return;
-            }
 
             _disposed = true;
             players = [.. _players];
