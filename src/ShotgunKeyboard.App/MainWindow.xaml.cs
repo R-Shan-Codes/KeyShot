@@ -29,11 +29,11 @@ public partial class MainWindow : Window
         var playlists = new PlaylistCatalog(playlistsDirectory);
 
         var activePlaylist = playlists.Find(_settings.Weapon)
-            ?? playlists.Find("Shotgun")
-            ?? playlists.Find("Test Sounds")
+            ?? playlists.Find("shotgun")
+            ?? playlists.Find("test-sounds")
             ?? playlists.Playlists.FirstOrDefault();
 
-        var soundDirectory = activePlaylist?.DirectoryPath
+        var soundDirectory = activePlaylist?.Directory
             ?? Path.Combine(AppContext.BaseDirectory, "assets", "sounds", "shotgun");
 
         var weapon = WeaponCatalog.Get(_settings.Weapon);
