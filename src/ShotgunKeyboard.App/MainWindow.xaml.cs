@@ -23,9 +23,9 @@ public partial class MainWindow : Window
         (KeyboardLayer.Alphanumeric, nameof(AlphanumericSoundComboBox)),
         (KeyboardLayer.Function, nameof(FunctionSoundComboBox)),
         (KeyboardLayer.Navigation, nameof(NavigationSoundComboBox)),
-        (KeyboardLayer.Arrow, nameof(ArrowsSoundComboBox)),
+        (KeyboardLayer.Arrow, nameof(ArrowSoundComboBox)),
         (KeyboardLayer.Numpad, nameof(NumpadSoundComboBox)),
-        (KeyboardLayer.Modifier, nameof(ModifiersSoundComboBox)),
+        (KeyboardLayer.Modifier, nameof(ModifierSoundComboBox)),
         (KeyboardLayer.Space, nameof(SpaceSoundComboBox)),
         (KeyboardLayer.Enter, nameof(EnterSoundComboBox))
     ];
