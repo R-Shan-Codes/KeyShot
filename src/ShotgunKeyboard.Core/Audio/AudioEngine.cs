@@ -4,6 +4,12 @@ using ShotgunKeyboard.Core.Weapons;
 
 namespace ShotgunKeyboard.Core.Audio;
 
+public enum PlaybackMode
+{
+    Random,
+    KeyMapped
+}
+
 public sealed class AudioEngine : IDisposable
 {
     private const int MaxSimultaneousShots = 8;
@@ -51,6 +57,7 @@ public sealed class AudioEngine : IDisposable
 
     public WeaponDefinition Weapon => _weapon;
     public int NormalSoundVariationCount => _playlistSoundBank?.Count ?? 1;
+    public PlaybackMode Mode { get; set; } = PlaybackMode.Random;
 
     public void SetPlaylist(PlaylistDefinition playlist)
     {
@@ -103,7 +110,7 @@ public sealed class AudioEngine : IDisposable
         }
     }
 
-    public void PlayShot(bool heavy = false)
+    public void PlayShot(bool heavy = false, uint virtualKeyCode = 0)
     {
         lock (_sync)
         {
@@ -130,7 +137,7 @@ public sealed class AudioEngine : IDisposable
                 return;
             }
 
-            var stream = CreateNextStream(heavy);
+            var stream = CreateNextStream(heavy, virtualKeyCode);
             var player = new WaveOutEvent
             {
                 Volume = Math.Clamp(_masterVolume * _weapon.VolumeMultiplier * (heavy ? 1.15f : 1f), 0f, 1f)
@@ -153,7 +160,7 @@ public sealed class AudioEngine : IDisposable
         }
     }
 
-    private WaveStream CreateNextStream(bool heavy)
+    private WaveStream CreateNextStream(bool heavy, uint virtualKeyCode)
     {
         if (heavy && _heavySoundBank is not null)
         {
@@ -162,7 +169,9 @@ public sealed class AudioEngine : IDisposable
 
         if (!heavy && _playlistSoundBank is not null)
         {
-            return _playlistSoundBank.CreateNextStream();
+            return Mode == PlaybackMode.KeyMapped
+                ? _playlistSoundBank.CreateStreamForKey(virtualKeyCode)
+                : _playlistSoundBank.CreateNextStream();
         }
 
         return new RawSourceWaveStream(
