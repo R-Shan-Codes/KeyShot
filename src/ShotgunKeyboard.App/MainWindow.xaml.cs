@@ -23,24 +23,28 @@ public partial class MainWindow : Window
 
         _settings = KeyShotSettings.Load();
 
-        var assetsRoot = Path.Combine(AppContext.BaseDirectory, "assets");
-        var legacySoundRoot = Path.Combine(assetsRoot, "sounds");
-        var playlistRoot = Path.Combine(assetsRoot, "Playlists");
-        var shotgunDirectory = Path.Combine(legacySoundRoot, "shotgun");
+        // Permanent user playlist location:
+        // src/ShotgunKeyboard.App/assets/Playlists/
+        var playlistsDirectory = Path.Combine(AppContext.BaseDirectory, "assets", "Playlists");
+        var playlists = new PlaylistCatalog(playlistsDirectory);
+
+        var activePlaylist = playlists.Find(_settings.Weapon)
+            ?? playlists.Find("Shotgun")
+            ?? playlists.Find("Test Sounds")
+            ?? playlists.Playlists.FirstOrDefault();
+
+        var soundDirectory = activePlaylist?.DirectoryPath
+            ?? Path.Combine(AppContext.BaseDirectory, "assets", "sounds", "shotgun");
 
         var weapon = WeaponCatalog.Get(_settings.Weapon);
-        var playlists = new PlaylistCatalog(playlistRoot);
-        var activePlaylist = playlists.Find("test-sounds")
-            ?? playlists.Find("shotgun");
-
-        _audioEngine = new AudioEngine(shotgunDirectory, playlist: activePlaylist, weapon: weapon)
+        _audioEngine = new AudioEngine(soundDirectory, playlist: activePlaylist, weapon: weapon)
         {
             Enabled = _settings.Enabled,
             MasterVolume = (float)Math.Clamp(_settings.Volume / 100.0, 0, 1)
         };
 
-        WeaponComboBox.ItemsSource = WeaponCatalog.All;
-        WeaponComboBox.SelectedItem = weapon;
+        WeaponComboBox.ItemsSource = playlists.Playlists;
+        WeaponComboBox.SelectedItem = activePlaylist;
         VolumeSlider.Value = _settings.Volume;
         SoundBankText.Text = $"{Math.Max(1, _audioEngine.NormalSoundVariationCount)} sounds";
         UpdateEnabledState();
@@ -89,17 +93,12 @@ public partial class MainWindow : Window
 
     private void WeaponComboBox_OnSelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
     {
-        if (!IsInitialized || WeaponComboBox.SelectedItem is not WeaponDefinition weapon)
+        if (!IsInitialized || WeaponComboBox.SelectedItem is not PlaylistDefinition playlist)
         {
             return;
         }
 
-        if (string.Equals(_settings.Weapon, weapon.Id, StringComparison.OrdinalIgnoreCase))
-        {
-            return;
-        }
-
-        _settings.Weapon = weapon.Id;
+        _settings.Weapon = playlist.Id;
         _settings.Save();
     }
 
