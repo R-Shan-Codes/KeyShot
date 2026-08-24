@@ -12,7 +12,6 @@ public sealed class AudioEngine : IDisposable
     private readonly WaveFormat _fallbackFormat;
     private readonly byte[] _fallbackSoundData;
     private readonly SoundBank? _heavySoundBank;
-    private readonly PlaylistSoundBank? _playlistSoundBank;
     private readonly object _sync = new();
     private readonly List<IWavePlayer> _players = [];
     private readonly string? _soundDirectory;
@@ -21,6 +20,7 @@ public sealed class AudioEngine : IDisposable
     private bool _enabled = true;
     private float _masterVolume = 0.78f;
     private WeaponDefinition _weapon;
+    private PlaylistSoundBank? _playlistSoundBank;
 
     public AudioEngine(string? soundDirectory = null, int sampleRate = 44100, WeaponDefinition? weapon = null, PlaylistDefinition? playlist = null)
     {
@@ -31,12 +31,7 @@ public sealed class AudioEngine : IDisposable
 
         if (playlist is not null)
         {
-            var bank = new PlaylistSoundBank(playlist);
-            _playlistSoundBank = bank.Count > 0 ? bank : null;
-            if (_playlistSoundBank is null)
-            {
-                bank.Dispose();
-            }
+            SetPlaylist(playlist);
         }
 
         if (!string.IsNullOrWhiteSpace(_soundDirectory))
@@ -56,6 +51,24 @@ public sealed class AudioEngine : IDisposable
 
     public WeaponDefinition Weapon => _weapon;
     public int NormalSoundVariationCount => _playlistSoundBank?.Count ?? 1;
+
+    public void SetPlaylist(PlaylistDefinition playlist)
+    {
+        lock (_sync)
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+
+            var next = new PlaylistSoundBank(playlist);
+            var previous = _playlistSoundBank;
+            _playlistSoundBank = next.Count > 0 ? next : null;
+            previous?.Dispose();
+
+            if (_playlistSoundBank is null)
+            {
+                next.Dispose();
+            }
+        }
+    }
 
     public bool Enabled
     {
