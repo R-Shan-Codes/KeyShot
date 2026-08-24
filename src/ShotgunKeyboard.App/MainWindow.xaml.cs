@@ -5,7 +5,6 @@ using ShotgunKeyboard.App.Settings;
 using ShotgunKeyboard.Core.Audio;
 using ShotgunKeyboard.Core.Input;
 using ShotgunKeyboard.Core.Playlists;
-using ShotgunKeyboard.Core.Weapons;
 
 namespace ShotgunKeyboard.App;
 
@@ -33,19 +32,25 @@ public partial class MainWindow : Window
 
         var soundDirectory = activePlaylist?.Directory
             ?? Path.Combine(AppContext.BaseDirectory, "assets", "sounds", "shotgun");
-        var weapon = WeaponCatalog.Get(_settings.Weapon);
 
-        _audioEngine = new AudioEngine(soundDirectory, playlist: activePlaylist, weapon: weapon)
+        _audioEngine = new AudioEngine(soundDirectory, playlist: activePlaylist)
         {
             Enabled = _settings.Enabled,
             MasterVolume = (float)Math.Clamp(_settings.Volume / 100.0, 0, 1),
             Mode = _settings.PlaybackMode
         };
 
+        ApplySavedLayerMappings();
+
         WeaponComboBox.ItemsSource = _playlists.Playlists;
         WeaponComboBox.SelectedItem = activePlaylist;
         PlaybackModeComboBox.ItemsSource = Enum.GetValues<PlaybackMode>();
         PlaybackModeComboBox.SelectedItem = _settings.PlaybackMode;
+        LayerComboBox.ItemsSource = Enum.GetValues<KeyboardLayer>();
+        LayerComboBox.SelectedIndex = 0;
+        RefreshSoundChoices(activePlaylist);
+        RefreshLayerMappings();
+        UpdateLayerEditorState();
         VolumeSlider.Value = _settings.Volume;
         SoundBankText.Text = $"{Math.Max(1, _audioEngine.NormalSoundVariationCount)} sounds";
         UpdateEnabledState();
@@ -59,10 +64,7 @@ public partial class MainWindow : Window
     private void OnGlobalKeyDown(object? sender, GlobalKeyEventArgs e)
     {
         _audioEngine.PlayShot(e.VirtualKeyCode == EnterVirtualKey, e.VirtualKeyCode);
-        Dispatcher.BeginInvoke(DispatcherPriority.Background, () =>
-        {
-            LastKeyText.Text = $"VK {e.VirtualKeyCode}";
-        });
+        Dispatcher.BeginInvoke(DispatcherPriority.Background, () => LastKeyText.Text = $"VK {e.VirtualKeyCode}");
     }
 
     private void EnableButton_OnClick(object sender, RoutedEventArgs e)
@@ -88,6 +90,7 @@ public partial class MainWindow : Window
         _audioEngine.SetPlaylist(playlist);
         _settings.Weapon = playlist.Id;
         _settings.Save();
+        RefreshSoundChoices(playlist);
         SoundBankText.Text = $"{Math.Max(1, _audioEngine.NormalSoundVariationCount)} sounds";
     }
 
@@ -97,6 +100,64 @@ public partial class MainWindow : Window
         _audioEngine.Mode = mode;
         _settings.PlaybackMode = mode;
         _settings.Save();
+        UpdateLayerEditorState();
+    }
+
+    private void AssignLayerButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (LayerComboBox.SelectedItem is not KeyboardLayer layer || LayerSoundComboBox.SelectedItem is not SoundItem sound)
+            return;
+
+        _settings.SetLayerSound(layer, sound.FileName);
+        _audioEngine.SetLayerSound(layer, sound.FileName);
+        _settings.Save();
+        RefreshLayerMappings();
+    }
+
+    private void ClearLayerButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (LayerComboBox.SelectedItem is not KeyboardLayer layer)
+            return;
+
+        _settings.SetLayerSound(layer, string.Empty);
+        _audioEngine.SetLayerSound(layer, null);
+        _settings.Save();
+        RefreshLayerMappings();
+    }
+
+    private void ApplySavedLayerMappings()
+    {
+        foreach (var pair in _settings.LayerSounds)
+        {
+            if (Enum.TryParse<KeyboardLayer>(pair.Key, out var layer))
+                _audioEngine.SetLayerSound(layer, pair.Value);
+        }
+    }
+
+    private void RefreshSoundChoices(PlaylistDefinition? playlist)
+    {
+        LayerSoundComboBox.ItemsSource = playlist?.Sounds ?? Array.Empty<SoundItem>();
+        LayerSoundComboBox.DisplayMemberPath = nameof(SoundItem.DisplayName);
+        LayerSoundComboBox.SelectedIndex = playlist?.Sounds.Count > 0 ? 0 : -1;
+    }
+
+    private void RefreshLayerMappings()
+    {
+        LayerMappingsList.Items.Clear();
+        foreach (var layer in Enum.GetValues<KeyboardLayer>())
+        {
+            var sound = _settings.GetLayerSound(layer);
+            LayerMappingsList.Items.Add($"{layer}: {(string.IsNullOrWhiteSpace(sound) ? "Random fallback" : sound)}");
+        }
+    }
+
+    private void UpdateLayerEditorState()
+    {
+        var selected = _audioEngine.Mode == PlaybackMode.Selected;
+        LayerEditorPanel.IsEnabled = selected;
+        LayerEditorHint.Text = selected
+            ? "Choose a keyboard layer and assign one playlist sound."
+            : "Switch to Selected to configure keyboard layers.";
     }
 
     private void UpdateEnabledState()
