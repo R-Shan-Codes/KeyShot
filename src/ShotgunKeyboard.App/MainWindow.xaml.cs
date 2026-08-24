@@ -27,7 +27,8 @@ public partial class MainWindow : Window
         var shotgunDirectory = Path.Combine(soundRoot, "shotgun");
         var weapon = WeaponCatalog.Get(_settings.Weapon);
         var playlists = new PlaylistCatalog(soundRoot);
-        var activePlaylist = playlists.Find("shotgun");
+        var activePlaylist = playlists.Find("shotgun")
+            ?? playlists.Find("Test Sounds");
 
         _audioEngine = new AudioEngine(shotgunDirectory, playlist: activePlaylist, weapon: weapon)
         {
