@@ -4,6 +4,7 @@ using System.Windows.Threading;
 using ShotgunKeyboard.App.Settings;
 using ShotgunKeyboard.Core.Audio;
 using ShotgunKeyboard.Core.Input;
+using ShotgunKeyboard.Core.Playlists;
 using ShotgunKeyboard.Core.Weapons;
 
 namespace ShotgunKeyboard.App;
@@ -22,9 +23,13 @@ public partial class MainWindow : Window
 
         _settings = KeyShotSettings.Load();
 
-        var soundDirectory = Path.Combine(AppContext.BaseDirectory, "assets", "sounds", "shotgun");
+        var soundRoot = Path.Combine(AppContext.BaseDirectory, "assets", "sounds");
+        var shotgunDirectory = Path.Combine(soundRoot, "shotgun");
         var weapon = WeaponCatalog.Get(_settings.Weapon);
-        _audioEngine = new AudioEngine(soundDirectory, weapon: weapon)
+        var playlists = new PlaylistCatalog(soundRoot);
+        var activePlaylist = playlists.Find("shotgun");
+
+        _audioEngine = new AudioEngine(shotgunDirectory, playlist: activePlaylist, weapon: weapon)
         {
             Enabled = _settings.Enabled,
             MasterVolume = (float)Math.Clamp(_settings.Volume / 100.0, 0, 1)
@@ -33,7 +38,7 @@ public partial class MainWindow : Window
         WeaponComboBox.ItemsSource = WeaponCatalog.All;
         WeaponComboBox.SelectedItem = weapon;
         VolumeSlider.Value = _settings.Volume;
-        SoundBankText.Text = $"{Math.Max(1, _audioEngine.NormalSoundVariationCount)} variations";
+        SoundBankText.Text = $"{Math.Max(1, _audioEngine.NormalSoundVariationCount)} sounds";
         UpdateEnabledState();
 
         _keyboardHook = new GlobalKeyboardHook();
@@ -90,9 +95,6 @@ public partial class MainWindow : Window
             return;
         }
 
-        // The audio engine currently owns the active sound bank. The selector is
-        // intentionally wired to the catalog now; live bank replacement is added
-        // when the second weapon is introduced.
         _settings.Weapon = weapon.Id;
         _settings.Save();
     }
