@@ -23,9 +23,9 @@ public partial class MainWindow : Window
         (KeyboardLayer.Alphanumeric, nameof(AlphanumericSoundComboBox)),
         (KeyboardLayer.Function, nameof(FunctionSoundComboBox)),
         (KeyboardLayer.Navigation, nameof(NavigationSoundComboBox)),
-        (KeyboardLayer.Arrows, nameof(ArrowsSoundComboBox)),
+        (KeyboardLayer.Arrow, nameof(ArrowsSoundComboBox)),
         (KeyboardLayer.Numpad, nameof(NumpadSoundComboBox)),
-        (KeyboardLayer.Modifiers, nameof(ModifiersSoundComboBox)),
+        (KeyboardLayer.Modifier, nameof(ModifiersSoundComboBox)),
         (KeyboardLayer.Space, nameof(SpaceSoundComboBox)),
         (KeyboardLayer.Enter, nameof(EnterSoundComboBox))
     ];
@@ -65,9 +65,12 @@ public partial class MainWindow : Window
     private void OnGlobalKeyDown(object? sender, GlobalKeyEventArgs e)
     {
         var layer = KeyboardLayerResolver.Resolve(e.VirtualKeyCode);
-        var selectedSound = _audioEngine.Mode == PlaybackMode.Selected ? _settings.GetLayerSound(layer) : null;
-        _audioEngine.PlayShot(layer == KeyboardLayer.Enter, selectedSound);
-        Dispatcher.BeginInvoke(DispatcherPriority.Background, () => LastKeyText.Text = $"{layer} · VK {e.VirtualKeyCode}");
+        var selectedSound = _audioEngine.Mode == PlaybackMode.KeyMapped ? _settings.GetLayerSound(layer) : null;
+        _audioEngine.PlayShot(layer == KeyboardLayer.Enter, e.VirtualKeyCode);
+        Dispatcher.BeginInvoke(DispatcherPriority.Background, () =>
+        {
+            LastKeyText.Text = $"{layer} · VK {e.VirtualKeyCode}";
+        });
     }
 
     private void EnableButton_OnClick(object sender, RoutedEventArgs e)
@@ -123,8 +126,7 @@ public partial class MainWindow : Window
             var sounds = playlist?.Sounds ?? [];
             foreach (var (layer, name) in LayerMappings)
             {
-                var combo = FindName(name) as ComboBox;
-                if (combo is null) continue;
+                if (FindName(name) is not ComboBox combo) continue;
                 combo.ItemsSource = sounds;
                 var configured = _settings.GetLayerSound(layer);
                 combo.SelectedItem = sounds.FirstOrDefault(s => string.Equals(s.FileName, configured, StringComparison.OrdinalIgnoreCase))
@@ -139,7 +141,7 @@ public partial class MainWindow : Window
 
     private void UpdateLayerControls()
     {
-        var enabled = _audioEngine.Mode == PlaybackMode.Selected;
+        var enabled = _audioEngine.Mode == PlaybackMode.KeyMapped;
         foreach (var (_, name) in LayerMappings)
         {
             if (FindName(name) is ComboBox combo) combo.IsEnabled = enabled;
