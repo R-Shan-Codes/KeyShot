@@ -23,8 +23,6 @@ public partial class MainWindow : Window
         InitializeComponent();
         _settings = KeyShotSettings.Load();
 
-        // Permanent user playlist location:
-        // src/ShotgunKeyboard.App/assets/Playlists/
         var playlistsDirectory = Path.Combine(AppContext.BaseDirectory, "assets", "Playlists");
         _playlists = new PlaylistCatalog(playlistsDirectory);
 
@@ -40,11 +38,14 @@ public partial class MainWindow : Window
         _audioEngine = new AudioEngine(soundDirectory, playlist: activePlaylist, weapon: weapon)
         {
             Enabled = _settings.Enabled,
-            MasterVolume = (float)Math.Clamp(_settings.Volume / 100.0, 0, 1)
+            MasterVolume = (float)Math.Clamp(_settings.Volume / 100.0, 0, 1),
+            Mode = _settings.PlaybackMode
         };
 
         WeaponComboBox.ItemsSource = _playlists.Playlists;
         WeaponComboBox.SelectedItem = activePlaylist;
+        PlaybackModeComboBox.ItemsSource = Enum.GetValues<PlaybackMode>();
+        PlaybackModeComboBox.SelectedItem = _settings.PlaybackMode;
         VolumeSlider.Value = _settings.Volume;
         SoundBankText.Text = $"{Math.Max(1, _audioEngine.NormalSoundVariationCount)} sounds";
         UpdateEnabledState();
@@ -57,7 +58,7 @@ public partial class MainWindow : Window
 
     private void OnGlobalKeyDown(object? sender, GlobalKeyEventArgs e)
     {
-        _audioEngine.PlayShot(e.VirtualKeyCode == EnterVirtualKey);
+        _audioEngine.PlayShot(e.VirtualKeyCode == EnterVirtualKey, e.VirtualKeyCode);
         Dispatcher.BeginInvoke(DispatcherPriority.Background, () =>
         {
             LastKeyText.Text = $"VK {e.VirtualKeyCode}";
@@ -88,6 +89,14 @@ public partial class MainWindow : Window
         _settings.Weapon = playlist.Id;
         _settings.Save();
         SoundBankText.Text = $"{Math.Max(1, _audioEngine.NormalSoundVariationCount)} sounds";
+    }
+
+    private void PlaybackModeComboBox_OnSelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+    {
+        if (!IsInitialized || PlaybackModeComboBox.SelectedItem is not PlaybackMode mode) return;
+        _audioEngine.Mode = mode;
+        _settings.PlaybackMode = mode;
+        _settings.Save();
     }
 
     private void UpdateEnabledState()
