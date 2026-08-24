@@ -3,14 +3,15 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="KeyShot"
         Width="480"
-        Height="430"
+        Height="500"
         MinWidth="440"
-        MinHeight="400"
+        MinHeight="450"
         WindowStartupLocation="CenterScreen"
         ResizeMode="CanResize">
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
         <Grid Margin="28">
             <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
@@ -33,25 +34,31 @@
             </Grid>
 
             <Border Grid.Row="1" Margin="0,24,0,0" Padding="16" BorderBrush="#DDDDDD" BorderThickness="1" CornerRadius="8">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <StackPanel>
-                        <TextBlock FontSize="13" Foreground="Gray">WEAPON</TextBlock>
-                        <ComboBox x:Name="WeaponComboBox"
-                                  Margin="0,6,0,0"
-                                  Width="280"
-                                  HorizontalAlignment="Left"
-                                  FontSize="18"
-                                  DisplayMemberPath="DisplayName"
-                                  SelectionChanged="WeaponComboBox_OnSelectionChanged" />
-                    </StackPanel>
-                </Grid>
+                <StackPanel>
+                    <TextBlock FontSize="13" Foreground="Gray">PLAYLIST</TextBlock>
+                    <ComboBox x:Name="WeaponComboBox"
+                              Margin="0,6,0,0"
+                              Width="280"
+                              HorizontalAlignment="Left"
+                              FontSize="18"
+                              DisplayMemberPath="DisplayName"
+                              SelectionChanged="WeaponComboBox_OnSelectionChanged" />
+                </StackPanel>
             </Border>
 
-            <Grid Grid.Row="2" Margin="0,20,0,0">
+            <Border Grid.Row="2" Margin="0,14,0,0" Padding="16" BorderBrush="#DDDDDD" BorderThickness="1" CornerRadius="8">
+                <StackPanel>
+                    <TextBlock FontSize="13" Foreground="Gray">PLAYBACK MODE</TextBlock>
+                    <ComboBox x:Name="PlaybackModeComboBox"
+                              Margin="0,6,0,0"
+                              Width="280"
+                              HorizontalAlignment="Left"
+                              FontSize="16"
+                              SelectionChanged="PlaybackModeComboBox_OnSelectionChanged" />
+                </StackPanel>
+            </Border>
+
+            <Grid Grid.Row="3" Margin="0,20,0,0">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
@@ -63,9 +70,9 @@
                 <Slider Grid.Row="1" x:Name="VolumeSlider" Margin="0,8,0,0" Minimum="0" Maximum="100" Value="78" TickFrequency="10" IsSnapToTickEnabled="False" ValueChanged="VolumeSlider_OnValueChanged" />
             </Grid>
 
-            <Button Grid.Row="3" x:Name="EnableButton" Margin="0,22,0,0" Height="42" FontSize="15" FontWeight="SemiBold" Click="EnableButton_OnClick">Disable KeyShot</Button>
+            <Button Grid.Row="4" x:Name="EnableButton" Margin="0,22,0,0" Height="42" FontSize="15" FontWeight="SemiBold" Click="EnableButton_OnClick">Disable KeyShot</Button>
 
-            <Border Grid.Row="4" Margin="0,20,0,0" Padding="16" Background="#F6F6F6" CornerRadius="8">
+            <Border Grid.Row="5" Margin="0,20,0,0" Padding="16" Background="#F6F6F6" CornerRadius="8">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
