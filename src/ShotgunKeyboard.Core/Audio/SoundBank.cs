@@ -21,6 +21,7 @@ public sealed class SoundBank : IDisposable
     }
 
     public int Count => _paths.Length;
+    public IReadOnlyList<string> Files => _paths;
 
     public WaveStream CreateStream(int index)
     {
