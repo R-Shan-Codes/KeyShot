@@ -7,15 +7,16 @@ namespace ShotgunKeyboard.Core.Audio;
 public sealed class AudioEngine : IDisposable
 {
     private const int MaxSimultaneousShots = 8;
+    private const long MinimumNormalShotIntervalTicks = TimeSpan.TicksPerMillisecond * 20;
 
     private readonly WaveFormat _fallbackFormat;
     private readonly byte[] _fallbackSoundData;
     private readonly SoundBank? _heavySoundBank;
     private readonly PlaylistSoundBank? _playlistSoundBank;
-    private readonly SoundVariationSelector _normalVariationSelector = new();
     private readonly object _sync = new();
     private readonly List<IWavePlayer> _players = [];
     private readonly string? _soundDirectory;
+    private long _lastNormalShotTicks;
     private bool _disposed;
     private bool _enabled = true;
     private float _masterVolume = 0.78f;
@@ -97,6 +98,17 @@ public sealed class AudioEngine : IDisposable
             if (!_enabled)
             {
                 return;
+            }
+
+            var now = DateTime.UtcNow.Ticks;
+            if (!heavy && now - _lastNormalShotTicks < MinimumNormalShotIntervalTicks)
+            {
+                return;
+            }
+
+            if (!heavy)
+            {
+                _lastNormalShotTicks = now;
             }
 
             CleanupFinishedPlayers();
