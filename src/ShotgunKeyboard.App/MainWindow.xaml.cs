@@ -16,6 +16,7 @@ public partial class MainWindow : Window
     private readonly GlobalKeyboardHook _keyboardHook;
     private readonly AudioEngine _audioEngine;
     private readonly KeyShotSettings _settings;
+    private readonly PlaylistCatalog _playlists;
 
     public MainWindow()
     {
@@ -26,12 +27,12 @@ public partial class MainWindow : Window
         // Permanent user playlist location:
         // src/ShotgunKeyboard.App/assets/Playlists/
         var playlistsDirectory = Path.Combine(AppContext.BaseDirectory, "assets", "Playlists");
-        var playlists = new PlaylistCatalog(playlistsDirectory);
+        _playlists = new PlaylistCatalog(playlistsDirectory);
 
-        var activePlaylist = playlists.Find(_settings.Weapon)
-            ?? playlists.Find("shotgun")
-            ?? playlists.Find("test-sounds")
-            ?? playlists.Playlists.FirstOrDefault();
+        var activePlaylist = _playlists.Find(_settings.Weapon)
+            ?? _playlists.Find("shotgun")
+            ?? _playlists.Find("test-sounds")
+            ?? _playlists.Playlists.FirstOrDefault();
 
         var soundDirectory = activePlaylist?.Directory
             ?? Path.Combine(AppContext.BaseDirectory, "assets", "sounds", "shotgun");
@@ -43,7 +44,7 @@ public partial class MainWindow : Window
             MasterVolume = (float)Math.Clamp(_settings.Volume / 100.0, 0, 1)
         };
 
-        WeaponComboBox.ItemsSource = playlists.Playlists;
+        WeaponComboBox.ItemsSource = _playlists.Playlists;
         WeaponComboBox.SelectedItem = activePlaylist;
         VolumeSlider.Value = _settings.Volume;
         SoundBankText.Text = $"{Math.Max(1, _audioEngine.NormalSoundVariationCount)} sounds";
@@ -98,8 +99,14 @@ public partial class MainWindow : Window
             return;
         }
 
+        if (!_audioEngine.TrySetPlaylist(playlist))
+        {
+            return;
+        }
+
         _settings.Weapon = playlist.Id;
         _settings.Save();
+        SoundBankText.Text = $"{Math.Max(1, _audioEngine.NormalSoundVariationCount)} sounds";
     }
 
     private void UpdateEnabledState()
