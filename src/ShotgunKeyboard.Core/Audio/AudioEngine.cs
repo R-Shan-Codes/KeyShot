@@ -1,4 +1,5 @@
 using NAudio.Wave;
+using ShotgunKeyboard.Core.Playlists;
 using ShotgunKeyboard.Core.Weapons;
 
 namespace ShotgunKeyboard.Core.Audio;
@@ -9,8 +10,8 @@ public sealed class AudioEngine : IDisposable
 
     private readonly WaveFormat _fallbackFormat;
     private readonly byte[] _fallbackSoundData;
-    private readonly SoundBank? _normalSoundBank;
     private readonly SoundBank? _heavySoundBank;
+    private readonly PlaylistSoundBank? _playlistSoundBank;
     private readonly SoundVariationSelector _normalVariationSelector = new();
     private readonly object _sync = new();
     private readonly List<IWavePlayer> _players = [];
@@ -20,28 +21,25 @@ public sealed class AudioEngine : IDisposable
     private float _masterVolume = 0.78f;
     private WeaponDefinition _weapon;
 
-    public AudioEngine(string? soundDirectory = null, int sampleRate = 44100, WeaponDefinition? weapon = null)
+    public AudioEngine(string? soundDirectory = null, int sampleRate = 44100, WeaponDefinition? weapon = null, PlaylistDefinition? playlist = null)
     {
         _fallbackFormat = new WaveFormat(sampleRate, 16, 1);
         _fallbackSoundData = ShotgunTestSoundGenerator.CreatePcm16Mono(sampleRate);
         _soundDirectory = soundDirectory;
         _weapon = weapon ?? WeaponCatalog.Get("shotgun");
 
+        if (playlist is not null)
+        {
+            var bank = new PlaylistSoundBank(playlist);
+            _playlistSoundBank = bank.Count > 0 ? bank : null;
+            if (_playlistSoundBank is null)
+            {
+                bank.Dispose();
+            }
+        }
+
         if (!string.IsNullOrWhiteSpace(_soundDirectory))
         {
-            var normalFiles = _weapon.NormalSounds
-                .Select(ResolvePreferredFileName)
-                .Where(fileName => fileName is not null)
-                .Select(fileName => fileName!)
-                .ToArray();
-
-            var normalBank = new SoundBank(_soundDirectory, normalFiles);
-            _normalSoundBank = normalBank.Count > 0 ? normalBank : null;
-            if (_normalSoundBank is null)
-            {
-                normalBank.Dispose();
-            }
-
             var heavyFile = ResolvePreferredFileName(_weapon.HeavySounds);
             if (heavyFile is not null)
             {
@@ -56,7 +54,7 @@ public sealed class AudioEngine : IDisposable
     }
 
     public WeaponDefinition Weapon => _weapon;
-    public int NormalSoundVariationCount => _normalSoundBank?.Count ?? 1;
+    public int NormalSoundVariationCount => _playlistSoundBank?.Count ?? 1;
 
     public bool Enabled
     {
@@ -137,10 +135,9 @@ public sealed class AudioEngine : IDisposable
             return _heavySoundBank.CreateStream(0);
         }
 
-        if (!heavy && _normalSoundBank is not null)
+        if (!heavy && _playlistSoundBank is not null)
         {
-            var index = _normalVariationSelector.Select(_normalSoundBank.Count);
-            return _normalSoundBank.CreateStream(index);
+            return _playlistSoundBank.CreateNextStream();
         }
 
         return new RawSourceWaveStream(
@@ -201,7 +198,7 @@ public sealed class AudioEngine : IDisposable
             player.Dispose();
         }
 
-        _normalSoundBank?.Dispose();
+        _playlistSoundBank?.Dispose();
         _heavySoundBank?.Dispose();
         GC.SuppressFinalize(this);
     }
