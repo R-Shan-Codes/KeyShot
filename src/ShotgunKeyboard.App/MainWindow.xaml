@@ -3,14 +3,15 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="KeyShot"
         Width="520"
-        Height="720"
+        Height="760"
         MinWidth="480"
-        MinHeight="620"
+        MinHeight="650"
         WindowStartupLocation="CenterScreen"
         ResizeMode="CanResize">
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
         <Grid Margin="28">
             <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
@@ -68,11 +69,11 @@
                         <TextBlock Grid.Row="2" Margin="0,7,0,0" FontWeight="SemiBold">Navigation</TextBlock>
                         <ComboBox Grid.Row="2" Grid.Column="1" x:Name="NavigationSoundComboBox" Margin="0,7,0,0" DisplayMemberPath="DisplayName" Tag="Navigation" SelectionChanged="LayerMappingSound_OnSelectionChanged" />
                         <TextBlock Grid.Row="3" Margin="0,7,0,0" FontWeight="SemiBold">Arrow</TextBlock>
-                        <ComboBox Grid.Row="3" Grid.Column="1" x:Name="ArrowsSoundComboBox" Margin="0,7,0,0" DisplayMemberPath="DisplayName" Tag="Arrows" SelectionChanged="LayerMappingSound_OnSelectionChanged" />
+                        <ComboBox Grid.Row="3" Grid.Column="1" x:Name="ArrowSoundComboBox" Margin="0,7,0,0" DisplayMemberPath="DisplayName" Tag="Arrow" SelectionChanged="LayerMappingSound_OnSelectionChanged" />
                         <TextBlock Grid.Row="4" Margin="0,7,0,0" FontWeight="SemiBold">Numpad</TextBlock>
                         <ComboBox Grid.Row="4" Grid.Column="1" x:Name="NumpadSoundComboBox" Margin="0,7,0,0" DisplayMemberPath="DisplayName" Tag="Numpad" SelectionChanged="LayerMappingSound_OnSelectionChanged" />
                         <TextBlock Grid.Row="5" Margin="0,7,0,0" FontWeight="SemiBold">Modifier</TextBlock>
-                        <ComboBox Grid.Row="5" Grid.Column="1" x:Name="ModifiersSoundComboBox" Margin="0,7,0,0" DisplayMemberPath="DisplayName" Tag="Modifiers" SelectionChanged="LayerMappingSound_OnSelectionChanged" />
+                        <ComboBox Grid.Row="5" Grid.Column="1" x:Name="ModifierSoundComboBox" Margin="0,7,0,0" DisplayMemberPath="DisplayName" Tag="Modifier" SelectionChanged="LayerMappingSound_OnSelectionChanged" />
                         <TextBlock Grid.Row="6" Margin="0,7,0,0" FontWeight="SemiBold">Space</TextBlock>
                         <ComboBox Grid.Row="6" Grid.Column="1" x:Name="SpaceSoundComboBox" Margin="0,7,0,0" DisplayMemberPath="DisplayName" Tag="Space" SelectionChanged="LayerMappingSound_OnSelectionChanged" />
                         <TextBlock Grid.Row="7" Margin="0,7,0,0" FontWeight="SemiBold">Enter</TextBlock>
@@ -93,7 +94,14 @@
                 <Slider Grid.Row="1" x:Name="VolumeSlider" Margin="0,8,0,0" Minimum="0" Maximum="100" Value="78" TickFrequency="10" ValueChanged="VolumeSlider_OnValueChanged" />
             </Grid>
 
-            <Button Grid.Row="4" x:Name="EnableButton" Margin="0,22,0,0" Height="42" FontSize="15" FontWeight="SemiBold" Click="EnableButton_OnClick">Disable KeyShot</Button>
+            <Border Grid.Row="4" Margin="0,20,0,0" Padding="16" Background="#F6F6F6" CornerRadius="8">
+                <StackPanel>
+                    <TextBlock Foreground="Gray">Last key</TextBlock>
+                    <TextBlock x:Name="LastKeyText" Margin="0,4,0,0" FontWeight="SemiBold" Text="Waiting..." />
+                </StackPanel>
+            </Border>
+
+            <Button Grid.Row="5" x:Name="EnableButton" Margin="0,22,0,0" Height="42" FontSize="15" FontWeight="SemiBold" Click="EnableButton_OnClick">Disable KeyShot</Button>
         </Grid>
     </ScrollViewer>
 </Window>
