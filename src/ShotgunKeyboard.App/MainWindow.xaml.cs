@@ -21,7 +21,6 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
-
         _settings = KeyShotSettings.Load();
 
         // Permanent user playlist location:
@@ -36,8 +35,8 @@ public partial class MainWindow : Window
 
         var soundDirectory = activePlaylist?.Directory
             ?? Path.Combine(AppContext.BaseDirectory, "assets", "sounds", "shotgun");
-
         var weapon = WeaponCatalog.Get(_settings.Weapon);
+
         _audioEngine = new AudioEngine(soundDirectory, playlist: activePlaylist, weapon: weapon)
         {
             Enabled = _settings.Enabled,
@@ -53,14 +52,12 @@ public partial class MainWindow : Window
         _keyboardHook = new GlobalKeyboardHook();
         _keyboardHook.KeyDown += OnGlobalKeyDown;
         _keyboardHook.Start();
-
         Closed += (_, _) => DisposeResources();
     }
 
     private void OnGlobalKeyDown(object? sender, GlobalKeyEventArgs e)
     {
         _audioEngine.PlayShot(e.VirtualKeyCode == EnterVirtualKey);
-
         Dispatcher.BeginInvoke(DispatcherPriority.Background, () =>
         {
             LastKeyText.Text = $"VK {e.VirtualKeyCode}";
@@ -77,33 +74,17 @@ public partial class MainWindow : Window
 
     private void VolumeSlider_OnValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
     {
-        if (_audioEngine is null || _settings is null)
-        {
-            return;
-        }
-
+        if (_audioEngine is null || _settings is null) return;
         _audioEngine.MasterVolume = (float)(e.NewValue / 100.0);
         _settings.Volume = e.NewValue;
         VolumeText.Text = $"{Math.Round(e.NewValue):0}%";
-
-        if (IsInitialized)
-        {
-            _settings.Save();
-        }
+        if (IsInitialized) _settings.Save();
     }
 
     private void WeaponComboBox_OnSelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
     {
-        if (!IsInitialized || WeaponComboBox.SelectedItem is not PlaylistDefinition playlist)
-        {
-            return;
-        }
-
-        if (!_audioEngine.TrySetPlaylist(playlist))
-        {
-            return;
-        }
-
+        if (!IsInitialized || WeaponComboBox.SelectedItem is not PlaylistDefinition playlist) return;
+        _audioEngine.SetPlaylist(playlist);
         _settings.Weapon = playlist.Id;
         _settings.Save();
         SoundBankText.Text = $"{Math.Max(1, _audioEngine.NormalSoundVariationCount)} sounds";
