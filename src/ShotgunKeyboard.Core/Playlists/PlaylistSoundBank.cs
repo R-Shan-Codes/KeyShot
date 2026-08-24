@@ -29,5 +29,18 @@ public sealed class PlaylistSoundBank : IDisposable
         return _bank.CreateStream(_selector.Select(_bank.Count));
     }
 
+    public WaveStream CreateStreamForKey(uint virtualKeyCode)
+    {
+        if (_bank.Count == 0)
+        {
+            throw new InvalidOperationException("The playlist contains no supported audio files.");
+        }
+
+        // Deterministic key mapping: the same key always selects the same
+        // playlist sound. This is intentionally stable across launches.
+        var index = (int)(virtualKeyCode % (uint)_bank.Count);
+        return _bank.CreateStream(index);
+    }
+
     public void Dispose() => _bank.Dispose();
 }
