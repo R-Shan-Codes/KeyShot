@@ -1,5 +1,6 @@
 using System.IO;
 using System.Text.Json;
+using ShotgunKeyboard.Core.Audio;
 
 namespace ShotgunKeyboard.App.Settings;
 
@@ -8,6 +9,7 @@ public sealed class KeyShotSettings
     public bool Enabled { get; set; } = true;
     public double Volume { get; set; } = 78;
     public string Weapon { get; set; } = "shotgun";
+    public PlaybackMode PlaybackMode { get; set; } = PlaybackMode.Random;
 
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
