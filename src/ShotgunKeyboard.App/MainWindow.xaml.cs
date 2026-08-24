@@ -23,12 +23,15 @@ public partial class MainWindow : Window
 
         _settings = KeyShotSettings.Load();
 
-        var soundRoot = Path.Combine(AppContext.BaseDirectory, "assets", "sounds");
-        var shotgunDirectory = Path.Combine(soundRoot, "shotgun");
+        var assetsRoot = Path.Combine(AppContext.BaseDirectory, "assets");
+        var legacySoundRoot = Path.Combine(assetsRoot, "sounds");
+        var playlistRoot = Path.Combine(assetsRoot, "Playlists");
+        var shotgunDirectory = Path.Combine(legacySoundRoot, "shotgun");
+
         var weapon = WeaponCatalog.Get(_settings.Weapon);
-        var playlists = new PlaylistCatalog(soundRoot);
-        var activePlaylist = playlists.Find("shotgun")
-            ?? playlists.Find("Test Sounds");
+        var playlists = new PlaylistCatalog(playlistRoot);
+        var activePlaylist = playlists.Find("test-sounds")
+            ?? playlists.Find("shotgun");
 
         _audioEngine = new AudioEngine(shotgunDirectory, playlist: activePlaylist, weapon: weapon)
         {
