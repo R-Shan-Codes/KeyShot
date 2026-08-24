@@ -18,21 +18,26 @@ public partial class MainWindow : Window
     private readonly PlaylistCatalog _playlists;
     private bool _updatingLayerUi;
 
+    private static readonly (KeyboardLayer Layer, string Name)[] LayerMappings =
+    [
+        (KeyboardLayer.Alphanumeric, nameof(AlphanumericSoundComboBox)),
+        (KeyboardLayer.Function, nameof(FunctionSoundComboBox)),
+        (KeyboardLayer.Navigation, nameof(NavigationSoundComboBox)),
+        (KeyboardLayer.Arrows, nameof(ArrowsSoundComboBox)),
+        (KeyboardLayer.Numpad, nameof(NumpadSoundComboBox)),
+        (KeyboardLayer.Modifiers, nameof(ModifiersSoundComboBox)),
+        (KeyboardLayer.Space, nameof(SpaceSoundComboBox)),
+        (KeyboardLayer.Enter, nameof(EnterSoundComboBox))
+    ];
+
     public MainWindow()
     {
         InitializeComponent();
         _settings = KeyShotSettings.Load();
-
         var playlistsDirectory = Path.Combine(AppContext.BaseDirectory, "assets", "Playlists");
         _playlists = new PlaylistCatalog(playlistsDirectory);
-
-        var activePlaylist = _playlists.Find(_settings.Weapon)
-            ?? _playlists.Find("shotgun")
-            ?? _playlists.Find("test-sounds")
-            ?? _playlists.Playlists.FirstOrDefault();
-
-        var soundDirectory = activePlaylist?.Directory
-            ?? Path.Combine(AppContext.BaseDirectory, "assets", "sounds", "shotgun");
+        var activePlaylist = _playlists.Find(_settings.Weapon) ?? _playlists.Find("shotgun") ?? _playlists.Find("test-sounds") ?? _playlists.Playlists.FirstOrDefault();
+        var soundDirectory = activePlaylist?.Directory ?? Path.Combine(AppContext.BaseDirectory, "assets", "sounds", "shotgun");
         var weapon = WeaponCatalog.Get(_settings.Weapon);
 
         _audioEngine = new AudioEngine(soundDirectory, playlist: activePlaylist, weapon: weapon)
@@ -44,16 +49,10 @@ public partial class MainWindow : Window
 
         WeaponComboBox.ItemsSource = _playlists.Playlists;
         WeaponComboBox.SelectedItem = activePlaylist;
-
         PlaybackModeComboBox.ItemsSource = Enum.GetValues<PlaybackMode>();
         PlaybackModeComboBox.SelectedItem = _settings.PlaybackMode;
-
-        LayerComboBox.ItemsSource = Enum.GetValues<KeyboardLayer>();
-        LayerComboBox.SelectedItem = KeyboardLayer.Alphanumeric;
-        RefreshLayerSoundChoices(activePlaylist);
-
+        RefreshLayerMappings(activePlaylist);
         VolumeSlider.Value = _settings.Volume;
-        SoundBankText.Text = $"{Math.Max(1, _audioEngine.NormalSoundVariationCount)} sounds";
         UpdateLayerControls();
         UpdateEnabledState();
 
@@ -66,30 +65,9 @@ public partial class MainWindow : Window
     private void OnGlobalKeyDown(object? sender, GlobalKeyEventArgs e)
     {
         var layer = KeyboardLayerResolver.Resolve(e.VirtualKeyCode);
-        var selectedSound = _audioEngine.Mode == PlaybackMode.Selected
-            ? GetLayerSound(layer)
-            : null;
-
-        var isEnter = layer == KeyboardLayer.Enter;
-        _audioEngine.PlayShot(isEnter, selectedSound);
-
-        Dispatcher.BeginInvoke(DispatcherPriority.Background, () =>
-        {
-            LastKeyText.Text = $"{layer} · VK {e.VirtualKeyCode}";
-        });
-    }
-
-    private string? GetLayerSound(KeyboardLayer layer)
-    {
-        var configured = _settings.GetLayerSound(layer);
-        if (!string.IsNullOrWhiteSpace(configured))
-        {
-            return configured;
-        }
-
-        return LayerSoundComboBox.ItemsSource is IEnumerable<SoundItem> sounds
-            ? sounds.FirstOrDefault()?.FileName
-            : null;
+        var selectedSound = _audioEngine.Mode == PlaybackMode.Selected ? _settings.GetLayerSound(layer) : null;
+        _audioEngine.PlayShot(layer == KeyboardLayer.Enter, selectedSound);
+        Dispatcher.BeginInvoke(DispatcherPriority.Background, () => LastKeyText.Text = $"{layer} · VK {e.VirtualKeyCode}");
     }
 
     private void EnableButton_OnClick(object sender, RoutedEventArgs e)
@@ -112,12 +90,10 @@ public partial class MainWindow : Window
     private void WeaponComboBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (!IsInitialized || WeaponComboBox.SelectedItem is not PlaylistDefinition playlist) return;
-
         _audioEngine.SetPlaylist(playlist);
         _settings.Weapon = playlist.Id;
         _settings.Save();
-        SoundBankText.Text = $"{Math.Max(1, _audioEngine.NormalSoundVariationCount)} sounds";
-        RefreshLayerSoundChoices(playlist);
+        RefreshLayerMappings(playlist);
     }
 
     private void PlaybackModeComboBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -129,37 +105,30 @@ public partial class MainWindow : Window
         UpdateLayerControls();
     }
 
-    private void LayerComboBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+    private void LayerMappingSound_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (_updatingLayerUi || LayerComboBox.SelectedItem is not KeyboardLayer layer)
+        if (_updatingLayerUi || sender is not ComboBox combo || combo.Tag is not string layerName || combo.SelectedItem is not SoundItem sound) return;
+        if (Enum.TryParse<KeyboardLayer>(layerName, out var layer))
         {
-            return;
+            _settings.SetLayerSound(layer, sound.FileName);
+            _settings.Save();
         }
-
-        SelectConfiguredLayerSound(layer);
     }
 
-    private void LayerSoundComboBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
-    {
-        if (_updatingLayerUi || LayerComboBox.SelectedItem is not KeyboardLayer layer || LayerSoundComboBox.SelectedItem is not SoundItem sound)
-        {
-            return;
-        }
-
-        _settings.SetLayerSound(layer, sound.FileName);
-        _settings.Save();
-    }
-
-    private void RefreshLayerSoundChoices(PlaylistDefinition? playlist)
+    private void RefreshLayerMappings(PlaylistDefinition? playlist)
     {
         _updatingLayerUi = true;
         try
         {
             var sounds = playlist?.Sounds ?? [];
-            LayerSoundComboBox.ItemsSource = sounds;
-            if (LayerComboBox.SelectedItem is KeyboardLayer layer)
+            foreach (var (layer, name) in LayerMappings)
             {
-                SelectConfiguredLayerSound(layer);
+                var combo = FindName(name) as ComboBox;
+                if (combo is null) continue;
+                combo.ItemsSource = sounds;
+                var configured = _settings.GetLayerSound(layer);
+                combo.SelectedItem = sounds.FirstOrDefault(s => string.Equals(s.FileName, configured, StringComparison.OrdinalIgnoreCase))
+                    ?? sounds.FirstOrDefault();
             }
         }
         finally
@@ -168,38 +137,20 @@ public partial class MainWindow : Window
         }
     }
 
-    private void SelectConfiguredLayerSound(KeyboardLayer layer)
-    {
-        var configured = _settings.GetLayerSound(layer);
-        var sounds = LayerSoundComboBox.ItemsSource as IEnumerable<SoundItem>;
-        var selected = sounds?.FirstOrDefault(sound =>
-            string.Equals(sound.FileName, configured, StringComparison.OrdinalIgnoreCase))
-            ?? sounds?.FirstOrDefault();
-
-        LayerSoundComboBox.SelectedItem = selected;
-    }
-
     private void UpdateLayerControls()
     {
         var enabled = _audioEngine.Mode == PlaybackMode.Selected;
-        LayerComboBox.IsEnabled = enabled;
-        LayerSoundComboBox.IsEnabled = enabled;
+        foreach (var (_, name) in LayerMappings)
+        {
+            if (FindName(name) is ComboBox combo) combo.IsEnabled = enabled;
+        }
     }
 
     private void UpdateEnabledState()
     {
-        if (_audioEngine.Enabled)
-        {
-            StatusText.Text = "● ACTIVE";
-            StatusText.Foreground = System.Windows.Media.Brushes.DarkGreen;
-            EnableButton.Content = "Disable KeyShot";
-        }
-        else
-        {
-            StatusText.Text = "● OFF";
-            StatusText.Foreground = System.Windows.Media.Brushes.Gray;
-            EnableButton.Content = "Enable KeyShot";
-        }
+        StatusText.Text = _audioEngine.Enabled ? "● ACTIVE" : "● OFF";
+        StatusText.Foreground = _audioEngine.Enabled ? System.Windows.Media.Brushes.DarkGreen : System.Windows.Media.Brushes.Gray;
+        EnableButton.Content = _audioEngine.Enabled ? "Disable KeyShot" : "Enable KeyShot";
     }
 
     private void DisposeResources()
